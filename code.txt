@@ -1,0 +1,253 @@
+import RPi.GPIO as GPIO 
+import os
+import subprocess
+import threading
+from bottle import run, post, request, response, get, route
+from array import array
+from subprocess import Popen, PIPE
+import time
+import SimpleHTTPServer
+import SocketServer
+
+
+
+
+def run(command):
+	process = Popen(command, stdout=PIPE, shell=True)
+	while True:
+		line = process.stdout.readline().rstrip()
+        	#if not line:
+		if line == '' and process.poll() is not None:
+			break
+        	yield line
+		#print len(line)
+		if(line[5:14]=="generated"):
+            		print "\n\n START PRESSING POWER BUTTON ON REMOTE CONTINOUSLY\n\n"       		
+		if(line=='Press RETURN now to start recording.'):
+			print "\n\n TIMEOUT !!. PRESS RESET BUTTON TO RETRY"
+		if(line=="Press RETURN now to start recording................................................................................."):
+			print "\n\n PLEASE STOP. PROCESSING.... \n\n"
+			time.sleep(4)
+		if(line=='Now hold down button "KEY_POWER".'):
+	    		print "\n\n PRESS POWER BUTTON \n\n"
+		if(line=='Now hold down button "KEY_VOLUMEUP".'):
+	    		print "\n\n PRESS VOLUME UP BUTTON \n\n"
+		if(line=='Now hold down button "KEY_VOLUMEDOWN".'):
+            		print "\n\n PRESS VOLUME DOWN BUTTON \n\n"
+		if(line=='Now hold down button "KEY_CHANNELUP".'):
+            		print "\n\n PRESS CHANNEL UP BUTTON \n\n"
+		if(line=='Now hold down button "KEY_CHANNELDOWN".'):
+            		print "\n\n PRESS CHANNEL DOWN BUTTON \n\n"
+		if(line=='Now hold down button "KEY_0".'):
+            		print "\n\n PRESS 0 BUTTON \n\n"
+		if(line=='Now hold down button "KEY_1".'):
+                        print "\n\n PRESS 1 BUTTON \n\n"
+		if(line=='Now hold down button "KEY_2".'):
+                        print "\n\n PRESS 2 BUTTON \n\n"
+		if(line=='Now hold down button "KEY_3".'):
+                        print "\n\n PRESS 3 BUTTON \n\n"
+		if(line=='Now hold down button "KEY_4".'):
+                        print "\n\n PRESS 4 BUTTON \n\n"
+		if(line=='Now hold down button "KEY_5".'):
+                        print "\n\n PRESS 5 BUTTON \n\n"
+		if(line=='Now hold down button "KEY_6".'):
+                        print "\n\n PRESS 6 BUTTON \n\n"
+		if(line=='Now hold down button "KEY_7".'):
+                        print "\n\n PRESS 7 BUTTON \n\n"
+		if(line=='Now hold down button "KEY_8".'):
+                        print "\n\n PRESS 8 BUTTON \n\n"
+		if(line=='Now hold down button "KEY_9".'):
+                        print "\n\n PRESS 9 BUTTON \n\n"
+		if(line=='Successfully written config file myremote.lircd.conf'):
+			print "\n\n BUTTONS RECOREDED SUCCESSFULLY !!\n\n"		
+			time.sleep(4)
+
+
+
+def reset():
+        while True:
+                if GPIO.input(10) == GPIO.HIGH:
+                        if GPIO.input(10) == GPIO.HIGH:
+                                if GPIO.input(10) == GPIO.HIGH:
+                                        if GPIO.input(10) == GPIO.HIGH:
+                                                if GPIO.input(10) == GPIO.HIGH:					
+                                                        print("Reset action performed")
+                                                        os.system('sudo kill $(pidof lircd')
+                                                        os.system('sudo /etc/init.d/lircd stop')
+                                                        os.system('sudo /etc/init.d/lircd restart')
+                                                        #os.system('irrecord -f -d /dev/lirc0 ~/lircd.conf < the123')
+							for path in run("irrecord -f -d /dev/lirc0 ~/lircd.conf < the123"):
+								#print path
+								print ""
+                                                        os.system('sudo cp myremote.lircd.conf /etc/lirc/lircd.conf')
+                                                        os.system('sudo /etc/init.d/lircd restart')
+                                                        os.system('sudo kill $(pidof lircd')
+                                                        os.system('sudo /etc/init.d/lircd stop')
+                                                        print 'NOW RESTARTING'
+                                                        os.system('sudo reboot')
+
+
+#def public():
+#	print 'making pi a public server'
+#	os.system('./Desktop/ngrok http -subdomain=eagleeye 8080')
+
+GPIO.setwarnings(False) # Ignore warning for now
+GPIO.setmode(GPIO.BOARD) # Use physical pin numbering
+GPIO.setup(10, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) 
+
+time_thread = threading.Thread(target=reset)
+time_thread.start()
+
+
+print 'Ready to use !!!'
+
+#time_thread2 = threading.Thread(target=public)
+#time_thread2.start()
+
+#os.system('./Desktop/ngrok http -subdomain=eagleeye 8080')
+#os.system("start cmd /c {command here}"
+
+class MyRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
+	def do_GET(path1):
+		print path1.path
+
+		if path1.path == '/channel%20up':
+			print "shubham"
+		if path1.path=="/tv%20on" or path1.path=="/tv%20of" or path1.path=="/tv%20off":
+                	print "performing power action"
+                	os.system('irsend send_once myremote KEY_POWER')
+
+        	if path1.path=="/volume%20up":
+                	print "performing volume action"
+                	os.system('irsend send_once myremote KEY_VOLUMEUP')
+
+        	if path1.path=="/volume%20down":
+                	print "performing volume action"
+                	os.system('irsend send_once myremote KEY_VOLUMEDOWN')
+
+        	if path1.path=="/channel%20up":
+                	print "performing channel action"
+                	os.system('irsend send_once myremote KEY_CHANNELUP')
+
+        	if path1.path=="/channel%20down":
+                	print "performing channel action"
+                	os.system('irsend send_once myremote KEY_CHANNELDOWN')
+
+        	if path1.path[ :25]=="/change%20to%20channel%20":
+                	print "performing channel change action"
+                	channel_number=path1.path[25:len(path1.path)]
+                	print channel_number
+                	num=int(channel_number)
+
+                	a = array("i")
+        
+                	while num>0:
+                        	digit=num%10
+                        	a.append(digit)
+                        	num=num/10
+
+                	k=len(a)
+                	while k>0:
+                        	digit=a[k-1]
+                        	if digit==0:
+                                	os.system('irsend send_once myremote KEY_0')
+                        	if digit==1:
+                                	os.system('irsend send_once myremote KEY_1')
+                        	if digit==2:
+                                	os.system('irsend send_once myremote KEY_2')
+                        	if digit==3:
+                                	os.system('irsend send_once myremote KEY_3')
+                        	if digit==4:
+                                	os.system('irsend send_once myremote KEY_4')
+                        	if digit==5:
+                                	os.system('irsend send_once myremote KEY_5')
+                        	if digit==6:
+                                	os.system('irsend send_once myremote KEY_6')
+                        	if digit==7:
+                                	os.system('irsend send_once myremote KEY_7')
+                        	if digit==8:
+                                	os.system('irsend send_once myremote KEY_8')
+                        	if digit==9:
+                                	os.system('irsend send_once myremote KEY_9')
+                        	k=k-1
+		return SimpleHTTPServer.SimpleHTTPRequestHandler.do_GET(path1)
+
+Handler = MyRequestHandler
+server = SocketServer.TCPServer(('0.0.0.0', 8080), Handler)
+
+server.serve_forever()
+
+
+"""
+ ./Desktop/ngrok http -subdomain=eagleeye 8080
+
+
+@route('/<path>',method = 'GET')
+def process(path):
+	
+        print path
+
+        if path=="tv on" or path=="tv of" or path=="tv off":
+                print "performing power action"
+                os.system('irsend send_once myremote KEY_POWER')
+
+        if path=="volume up":
+                print "performing volume action"
+                os.system('irsend send_once myremote KEY_VOLUMEUP')
+
+        if path=="volume down":
+                print "performing volume action"
+                os.system('irsend send_once myremote KEY_VOLUMEDOWN')
+
+        if path=="channel up":
+                print "performing channel action"
+                os.system('irsend send_once myremote KEY_CHANNELUP')
+
+        if path=="channel down":
+                print "performing channel action"
+                os.system('irsend send_once myremote KEY_CHANNELDOWN')
+
+
+        if path[ : 18]=="change to channel ":
+                print "performing channel change action"
+                channel_number=path[18:len(path)]
+                print channel_number
+                num=int(channel_number)
+
+                a = array("i")
+        
+                while num>0:
+                        digit=num%10
+                        a.append(digit)
+                        num=num/10
+
+                k=len(a)
+                while k>0:
+                        digit=a[k-1]
+                        if digit==0:
+                                os.system('irsend send_once myremote KEY_0')
+                        if digit==1:
+                                os.system('irsend send_once myremote KEY_1')
+                        if digit==2:
+                                os.system('irsend send_once myremote KEY_2')
+                        if digit==3:
+                                os.system('irsend send_once myremote KEY_3')
+                        if digit==4:
+                                os.system('irsend send_once myremote KEY_4')
+                        if digit==5:
+                                os.system('irsend send_once myremote KEY_5')
+                        if digit==6:
+                                os.system('irsend send_once myremote KEY_6')
+                        if digit==7:
+                                os.system('irsend send_once myremote KEY_7')
+                        if digit==8:
+                                os.system('irsend send_once myremote KEY_8')
+                        if digit==9:
+                                os.system('irsend send_once myremote KEY_9')
+                        k=k-1
+            
+        return subprocess.check_output(['python',path+'.py'],shell=True)
+
+run(host='0.0.0.0', port=8080, debug=True)
+
+"""
